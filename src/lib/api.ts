@@ -1,9 +1,11 @@
-/**
- * REST client for the PitWall Pro FastAPI backend.
- * Base URL is read from NEXT_PUBLIC_API_URL (default: http://localhost:8000).
- */
+// Throws at module init if NEXT_PUBLIC_API_URL is missing — no silent localhost fallback.
+function requireApiUrl(): string {
+  const url = process.env.NEXT_PUBLIC_API_URL
+  if (!url) throw new Error('NEXT_PUBLIC_API_URL is not set. Add it to .env.local.')
+  return url
+}
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const BASE = requireApiUrl()
 
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
   const url = new URL(`${BASE}${path}`)
@@ -223,8 +225,7 @@ export const fetchCompare = (
 // WebSocket URL helpers
 // ---------------------------------------------------------------------------
 
-const WS_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
-  .replace(/^http/, 'ws')
+const WS_BASE = BASE.replace(/^http/, 'ws')
 
 export const archiveReplayUrl = (year: number, gp: string, session: string, driver?: string, driverB?: string) => {
   let url = `${WS_BASE}/api/archive/replay?year=${year}&gp=${encodeURIComponent(gp)}&session=${encodeURIComponent(session)}`

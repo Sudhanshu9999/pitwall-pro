@@ -10,7 +10,11 @@ interface CircuitOutline {
   start_tangent?: [number, number]
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const API_BASE = (() => {
+  const url = process.env.NEXT_PUBLIC_API_URL
+  if (!url) throw new Error('NEXT_PUBLIC_API_URL is not set. Add it to .env.local.')
+  return url
+})()
 
 async function fetchOutline(year: number, gp: string): Promise<CircuitOutline | null> {
   try {
