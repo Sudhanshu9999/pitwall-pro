@@ -8,7 +8,11 @@ A professional F1 telemetry and strategy dashboard — live timing, archive sess
 
 ## Screenshots
 
-> _Screenshot placeholder — add `/docs/screenshots/` once deployed._
+### Landing Page
+![Landing Page](./docs/landing.jpg)
+
+### Dashboard — 2023 Miami GP Race Replay
+![Dashboard](./docs/dashboard.jpg)
 
 ---
 
