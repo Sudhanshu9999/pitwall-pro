@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+__pycache__/
+**/__pycache__/
+**/*.pyc
+*.pyc
+
+# FastF1 cache — never commit, rebuilds automatically
+backend/cache/
+**/*.ff1pkl
