@@ -19,7 +19,7 @@ export default function CTASection() {
               Open Dashboard
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </Link>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-border-accent text-text-muted font-display text-xs font-bold tracking-widest uppercase hover:border-f1-red hover:text-text-primary transition-colors">
+            <a href="https://github.com/Sudhanshu9999/pitwall-pro" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-border-accent text-text-muted font-display text-xs font-bold tracking-widest uppercase hover:border-f1-red hover:text-text-primary transition-colors">
               GitHub
             </a>
           </div>

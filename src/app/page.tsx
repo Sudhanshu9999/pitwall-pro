@@ -17,7 +17,7 @@ export default function Home() {
             <span className="font-display text-sm font-bold text-text-primary tracking-widest uppercase">PitWall Pro</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="https://github.com/sudhanshujadhav/pitwall-pro" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-text-muted hover:text-text-primary transition-colors hidden sm:block">GitHub</a>
+            <a href="https://github.com/Sudhanshu9999/pitwall-pro" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-text-muted hover:text-text-primary transition-colors hidden sm:block">GitHub</a>
             <Link href="/dashboard" className="font-display text-xs font-bold tracking-widest uppercase px-5 py-2.5 border border-f1-red text-f1-red hover:bg-f1-red hover:text-white transition-colors duration-200">
               Dashboard →
             </Link>
