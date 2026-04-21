@@ -60,7 +60,7 @@ export default function DashboardHeader({
 
       {/* Right — Actions */}
       <div className="flex items-center gap-3 shrink-0">
-        <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-border-dark font-mono text-xs text-text-dim hover:border-border-accent hover:text-text-muted transition-colors">
+        <button className="hidden items-center gap-2 px-3 py-1.5 border border-border-dark font-mono text-xs text-text-dim hover:border-border-accent hover:text-text-muted transition-colors">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M1 3h10M1 6h7M1 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>

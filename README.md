@@ -1,109 +1,218 @@
 # PitWall Pro
 
-F1 telemetry dashboard — live timing, archive replay, tyre strategy models, and driver comparison.
+A professional F1 telemetry and strategy dashboard — live timing, archive session replay, tyre degradation models, ERS inference, driver comparison, and circuit visualisation.
 
-## What it does
+**Live demo:** [pitwall-pro-one.vercel.app](https://pitwall-pro-one.vercel.app)
 
-- **Live timing** — real-time timing tower, race control messages, and weather during active F1 sessions via FastF1 SignalR
-- **Archive replay** — replay any session from 2018–2024 at 0.5x / 1x / 2x / 10x speed with full telemetry, track map, tyre deg curves, ERS inference, and undercut probability
-- **Driver comparison** — lap delta chart, sector bests, tyre stint timeline, and telemetry bars for any two drivers in any session
-- **Track map** — real GPS-sourced circuit outline with animated car positions and sector colouring
-- **Championship standings + last race results** — pulled from the Jolpica/Ergast API
+---
 
-## Stack
+## Screenshots
 
-| Layer | Tech |
+> _Screenshot placeholder — add `/docs/screenshots/` once deployed._
+
+---
+
+## Features
+
+| Feature | Status |
 |---|---|
-| Frontend | Next.js 15, TypeScript, Tailwind CSS, Zustand |
-| Backend | FastAPI (Python), FastF1, Redis |
-| Data | FastF1 (archive + live), OpenF1 (schedule), Jolpica/Ergast (standings) |
+| Live timing tower (position, gap, lap time, tyre, sector) | ✅ Live |
+| Archive replay (2018–2024) at 0.5×/1×/2×/10× speed | ✅ Live |
+| Replay play/pause and speed control | ✅ Live |
+| Track map with animated car positions | ✅ Live (archive only — see Limitations) |
+| Tyre wear bars with compound-normalised grip estimate | ✅ Live |
+| Tyre degradation curve (quadratic polynomial fit) | ✅ Live |
+| ERS deployment/harvest inference | ✅ Live |
+| Race control messages and track status | ✅ Live |
+| Circuit weather forecast for upcoming round | ✅ Live |
+| Driver comparison — lap delta chart | ✅ Live |
+| Driver comparison — sector bests | ✅ Live |
+| Driver comparison — tyre stint timeline | ✅ Live |
+| Driver comparison — telemetry overlay (speed/throttle/brake/gear) | ✅ Live |
+| Championship standings (WDC + WCC) | ✅ Live |
+| Last race results + podium | ✅ Live |
+| Upcoming grand prix card | ✅ Live |
+| Live track map with real-time car positions | ⚠️ Partial (Position.z locked — see Limitations) |
+| Undercut window probability | 🗓 Planned |
+| Natural language strategy query (Claude API) | 🗓 Planned |
 
-## Running locally
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Browser (Next.js 15)                  │
+│                                                         │
+│  /              Landing page                            │
+│  /dashboard     Main telemetry dashboard                │
+│  /dashboard/compare   Driver comparison                 │
+│                                                         │
+│  Zustand store ←── useReplaySocket (WebSocket client)   │
+│  src/lib/api.ts (REST client)                           │
+└────────────────┬───────────────────────────────────────┘
+                 │  REST + WebSocket (NEXT_PUBLIC_API_URL)
+┌────────────────▼───────────────────────────────────────┐
+│              FastAPI Backend (Railway)                  │
+│                                                         │
+│  /api/archive/*    REST catalogue + replay WebSocket    │
+│  /api/live/stream  Live SignalR proxy WebSocket         │
+│  /api/schedule/*   Calendar, standings, last race       │
+│  /health           Redis ping                           │
+│                                                         │
+│  FastF1 ──── local disk cache (cache/fastf1/)           │
+│  OpenF1 API ─ schedule + session metadata               │
+│  Jolpica/ergast ── standings fallback                   │
+│  Redis ──────── session metadata TTL cache              │
+└────────────────────────────────────────────────────────┘
+```
+
+**WebSocket frame protocol** — both archive replay and live stream share the same frame contract:
+
+| Frame type | Payload |
+|---|---|
+| `lap` | Full lap snapshot: timing, tyre deg, ERS, undercut, positions |
+| `tel_update` | Intra-lap car data (speed, throttle, brake, gear, DRS) |
+| `timing_update` | Gap/interval deltas between car positions |
+| `position_update` | Car XY coordinates for track map |
+| `circuit_outline` | SVG-ready circuit path + sector boundaries |
+| `rc_message` | Race Control message |
+| `track_status_update` | Green / SC / VSC / Red Flag |
+| `position_recalibrated` | Leader-trace offset correction |
+| `end` | Replay complete |
+| `no_session` | No active live session |
+| `error` | Backend error detail |
+
+---
+
+## Tech Stack
+
+### Frontend
+
+| | |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v3 |
+| State | Zustand |
+| Transport | native WebSocket + fetch |
+
+### Backend
+
+| | |
+|---|---|
+| Framework | FastAPI |
+| Runtime | Python 3.11 |
+| F1 data | FastF1 3.4 (archive + live SignalR) |
+| Live schedule | OpenF1 API + Jolpica/ergast fallback |
+| Analytics | NumPy, SciPy (tyre deg quadratic fit, ERS inference) |
+| Cache | Redis (session metadata TTL), FastF1 local disk cache |
+| Server | Uvicorn |
+
+---
+
+## Local Development
 
 ### Prerequisites
 
 - Node.js 20+
 - Python 3.11+
-- Redis (used for session metadata caching — app mostly works without it)
+- Redis running locally (`redis-server`)
+
+### Frontend
+
+```bash
+# Install dependencies
+npm install
+
+# Create env file (see Environment Variables below)
+cp .env.local.example .env.local
+
+# Start dev server
+npm run dev
+# → http://localhost:3000
+```
 
 ### Backend
 
 ```bash
 cd backend
+
+# Create and activate virtualenv
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Start Redis (optional but recommended)
-redis-server &
+# Create env file
+cp .env.example .env
 
-# Start the API server
+# Start server
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# → http://localhost:8000
 ```
 
-The backend uses FastF1's local cache. On first load of any session it downloads ~50–150 MB from the FastF1 cache CDN — this can take 1–2 minutes. Subsequent loads of the same session are instant.
+FastF1 will download session data to `backend/cache/fastf1/` on first use. The 2020 Austrian GP is pre-cached.
 
-**Backend environment variables** (`backend/.env`):
+---
 
-| Variable | Default | Description |
+## Environment Variables
+
+### Frontend (`.env.local`)
+
+| Variable | Description | Example |
 |---|---|---|
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
-| `FASTF1_CACHE_DIR` | `./cache/fastf1` | Path to FastF1 local cache |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins (add production domain here) |
+| `NEXT_PUBLIC_API_URL` | Full URL of the FastAPI backend | `http://localhost:8000` |
 
-### Frontend
+### Backend (`.env`)
 
-```bash
-cp .env.local.example .env.local
-# Edit .env.local if your backend runs on a different host/port
-
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-**Frontend environment variables** (`.env.local`):
-
-| Variable | Default | Description |
+| Variable | Description | Default |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Backend base URL |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `FASTF1_CACHE_DIR` | Path to FastF1 local cache | `./cache/fastf1` |
+| `CORS_ORIGINS` | Comma-separated allowed origins (unused after hardcoded list — kept for reference) | `http://localhost:3000` |
 
-## Project structure
+---
 
-```
-pitwall-pro/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx                  # Landing page
-│   │   └── dashboard/
-│   │       ├── layout.tsx            # Dashboard shell + WebSocket lifecycle
-│   │       ├── page.tsx              # Main dashboard (timing, track map, strategy)
-│   │       └── compare/page.tsx      # Driver comparison page
-│   ├── components/
-│   │   ├── dashboard/                # TimingTower, TrackMap, SessionSelector, …
-│   │   └── landing/                  # TrackHero, FeatureCards, UpcomingGP, …
-│   ├── hooks/useReplaySocket.ts      # WebSocket lifecycle hook
-│   ├── store/dashboardStore.ts       # Zustand global state
-│   └── lib/api.ts                    # REST client
-└── backend/
-    ├── main.py                       # FastAPI app entry point
-    ├── routers/
-    │   ├── archive.py                # Archive replay endpoints + WebSocket
-    │   ├── live.py                   # Live timing WebSocket
-    │   └── schedule.py               # Calendar, standings, last race
-    ├── services/
-    │   ├── fastf1_service.py         # FastF1 wrapper (sessions, telemetry, positions)
-    │   ├── fastf1_live_service.py    # SignalR live timing client
-    │   └── openf1_service.py         # OpenF1 schedule API
-    └── models/
-        ├── tyre_deg.py               # Degradation curve fitting
-        ├── undercut.py               # Undercut probability model
-        └── ers_inference.py          # ERS deployment inference
-```
+## Data Sources & Limitations
 
-## Notes
+### FastF1 (archive telemetry)
 
-- **Live car positions** on the track map are not available during live sessions — F1 locked the position feed in August 2025. Positions are available in archive replay only.
-- **ERS, tyre degradation, and undercut models** are archive-only. Live mode shows timing, weather, and race control only.
-- **Redis** is a soft dependency. The app runs without it but session metadata won't be cached between restarts.
+FastF1 sources data from the Ergast API and F1's own timing feeds. Full telemetry (car data, GPS positions) is available for **2018–2024**. The 2025 season feed changed format and **2026 data is not yet accessible**.
+
+### OpenF1 (live session metadata)
+
+OpenF1 provides live session keys, driver lists, and schedule data. During an active session, the API returns **401 Unauthorized** for some endpoints (`OpenF1LockedError`) — the backend falls back to FastF1/ergast for those calls.
+
+### Live car positions (`Position.z`)
+
+Real-time GPS car coordinates (`Position.z` in the FastF1 SignalR feed) have been **locked behind F1 TV authentication since August 2025**. The live track map cannot display animated positions until this restriction is lifted. Archive replay is unaffected — it uses recorded GPS data from FastF1.
+
+### Tyre degradation model
+
+Quadratic polynomial regression (`lap_time = a·age² + b·age + c`) fitted per driver per compound per stint. Requires a minimum of 4 clean laps to produce a reliable curve; outliers (safety car laps > 110% of median) are filtered before fitting.
+
+---
+
+## Roadmap
+
+- [ ] Live track map (blocked on F1 TV Position.z auth)
+- [ ] Undercut window probability card on dashboard
+- [ ] Natural language strategy Q&A via Claude API ("Who should pit first?")
+- [ ] Driver head-to-head comparison chart over a full season
+- [ ] Tyre strategy optimiser (pit window calculator)
+- [ ] Mobile-optimised layout improvements
+
+---
+
+## Deployment
+
+- **Frontend** — Vercel (auto-deploy from `main`). Set `NEXT_PUBLIC_API_URL` in Vercel project settings.
+- **Backend** — Railway. Set `REDIS_URL` in Railway environment variables. Redis is provisioned as a Railway add-on.
+
+---
+
+## License
+
+MIT
