@@ -1,11 +1,13 @@
-// Throws at module init if NEXT_PUBLIC_API_URL is missing — no silent localhost fallback.
-function requireApiUrl(): string {
+function getApiUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL
-  if (!url) throw new Error('NEXT_PUBLIC_API_URL is not set. Add it to .env.local.')
+  if (!url) {
+    if (typeof window === 'undefined') return ''
+    throw new Error('NEXT_PUBLIC_API_URL is not set.')
+  }
   return url
 }
 
-const BASE = requireApiUrl()
+const BASE = getApiUrl()
 
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
   const url = new URL(`${BASE}${path}`)
