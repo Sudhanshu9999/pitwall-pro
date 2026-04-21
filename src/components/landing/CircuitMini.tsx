@@ -99,6 +99,7 @@ export default function CircuitMini({
     let trackPath: Path2D | null = null
 
     function resize() {
+      if (!canvas) return
       const rect = canvas.getBoundingClientRect()
       w = Math.round(rect.width  * dpr)
       h = Math.round(rect.height * dpr)
@@ -143,7 +144,7 @@ export default function CircuitMini({
     function draw(timestamp: number) {
       const dt = lastTime ? (timestamp - lastTime) / 1000 : 0
       lastTime = timestamp
-
+if (!canvas) return
       const ctx = canvas.getContext('2d')
       if (!ctx || w === 0 || h === 0) {
         rafRef.current = requestAnimationFrame(draw)
